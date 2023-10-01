@@ -10,6 +10,5 @@ This app computes the modes of the 2D wave equation on a circle and can be used 
 - Make the tool more user-friendly
     - Somehow allow entire function to be read in by the user
     - Maybe json file for parameters?
-- Make a Docker image for compatability
 
 
