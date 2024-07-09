@@ -28,7 +28,7 @@ dt = 0.001
 iterations = 20000
 
 # Stepsize, how many iterations per frame in animation
-stepSize = 100
+stepSize = 10
 
 
 # Time coefficient matrix
@@ -79,12 +79,12 @@ for i in range(0, n):
 # calculating all values
 data = []
 data.append(u)
-
+a = 0
 for i in range(0, iterations):
     (uNew, uDerNew) = iteration(u, uDer)
     u = uNew
     uDer = uDerNew
-    if iterations % stepSize == 0:
+    if i % stepSize == 0:
         data.append(u)
 
 spacing = np.linspace(0.0, 1.0, n) # for FEM solution
@@ -109,6 +109,9 @@ def animate(i):
 
 # call the animator.  blit=True means only re-draw the parts that have changed.
 anim = ani.FuncAnimation(fig, animate, init_func=init,
-                               frames=iterations, interval=2, blit=True)
-
+                               frames=math.floor(iterations / stepSize), interval=2, blit=True)
+print(iterations)
+print(len(data))
+print(a)
+print(iterations / stepSize)
 plt.show()
