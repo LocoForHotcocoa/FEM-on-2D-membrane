@@ -2,15 +2,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as ani
 import os
+import sys
 
 import solutions as sol
 import coefficients as coef
 
-# important! put file path for ffmpeg here 
-plt.rcParams['animation.ffmpeg_path'] = '/Users/matthewbradley/Downloads/ffmpeg'
-
-
-(choice, ns, ms, a, c, Ntime, tmax) = np.loadtxt('params.txt')
+paramsfile = str(sys.argv[1])
+(choice, ns, ms, a, c, Ntime, tmax) = np.loadtxt(paramsfile)
 Ntime = int(Ntime)
 ns = int(ns)
 ms = int(ms)
@@ -50,13 +48,13 @@ ax = fig.add_subplot(111, projection = '3d')
 # animation
 
 def animate(i):
-    ax.collections.clear()
+    ax.clear()
     ax.set_zlim([-2,2]) # arbitrary, you can change this if you want
     ax.set_xlabel("x")
     ax.set_ylabel("y")
     ax.set_zlabel("u")
-    surf, = ax.plot_surface(X, Y, u(rmesh, thetamesh, tlist[i]), cmap=plt.cm.YlGnBu_r)
-    return surf,
+    surf = ax.plot_surface(X, Y, u(rmesh, thetamesh, tlist[i]), cmap=plt.cm.YlGnBu_r)
+    return surf
 
 anim = ani.FuncAnimation(
     fig, animate, frames=Ntime, interval=20, blit=False, save_count=50)
