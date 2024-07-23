@@ -88,7 +88,6 @@ for i in range(0, iterations):
         data.append(u)
 
 spacing = np.linspace(0.0, 1.0, n) # for FEM solution
-bigspacing = np.linspace(0.0, 1.0, 100) # for real solution
 
 #-----------------------------------------------------------------
 

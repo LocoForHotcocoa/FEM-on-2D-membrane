@@ -17,8 +17,6 @@ dt = 0.001
 iterations = 20000
 stepSize = 50
 
-plt.rcParams['animation.ffmpeg_path'] = '/Users/matthewbradley/Downloads/ffmpeg'
-
 save = True # choose to save the animation as a file
 dirname = 'animations' # folder name to store animations
 filename = f'FEM_wave_equation_tri_{numTriangles}_i_{iterations}_dt_{dt}_c_{c}.mp4' # animation file name
@@ -135,9 +133,6 @@ print('iterating FEM...\n')
 data = []
 data.append(u)
 
-spacing = np.linspace(0.0, 1.0, n)
-bigspacing = np.linspace(0.0, 1.0, 100)
-
 for i in range(0, iterations):
 	(uNew, uDerNew) = iteration(u, uDer)
 	u = uNew
@@ -157,7 +152,7 @@ surf = ax.plot_trisurf(xs, ys, z, triangles=triangles, cmap=plt.cm.YlGnBu_r)
 # animation
 
 def animate(i):
-	ax.collections.clear()
+	ax.clear()
 	ax.set_zlim([-2,2]) # arbitrary, you can change this if you want
 	ax.set_xlabel("x")
 	ax.set_ylabel("y")
@@ -177,6 +172,7 @@ if save == True:
 
     writer=ani.FFMpegWriter(bitrate=5000, fps=fps)
     anim.save(dirname + '/' + filename, writer=writer)
+    print(f'saving animation to {dirname}/{filename}')
 
 plt.show()
 
