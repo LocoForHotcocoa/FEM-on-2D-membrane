@@ -33,24 +33,56 @@ def animate_2D(iterations, c, numTriangles, dt, dir, show, save):
 	mesh = create_mesh(numTriangles)
 
 
-	# Extract vertices and triangles
+	# Extract list of vertices and triangles from mesh
 	vertices = np.array(mesh.points)
 	triangles = np.array(mesh.elements)
 
-	# make things easy, list of all x and y coordinates
+	# make things easy, seperate (x,y) tuple into seperate list of xs and ys for each vertex
 	xs = vertices[:,0]
 	ys = vertices[:,1]
 
-	# extract boundary points. 0 = inside, 1 = on boundary
+	# extract boundary point information. for each vertex, 0 = inside, 1 = on boundary
 	bs = np.array(mesh.point_markers)
 
 	#
 	## Math ---------------------------------------------------------------------------------------------------- ##
 	#
+	# our canonical element is the triangle that spans the points:
+	# (0,0), (0,1), and (1,0)
+	#
+	# in this element, we use a set of 
+	# 3 canonical basis functions phi(x,y) where:
+	# phi_1 = 1 - x - y
+	# phi_2 = x
+	# phi_3 = y
+	#
+	# then, over our canonical element:
+	#
+	#	integral of (phi_i * phi_j * dA)
+	#	gives us A[i,j]:
+	A = [[1/12 , -1/24, -1/24],
+		[-1/24, 1/4  , 1/8  ],
+		[-1/24, 1/8  , 1/12]]
+	
+	# 	and integral of (np.dot(grad(phi_i), grad(phi_j)) * dA)
+	#	gives us Ad[i,j]:
+	Ad = [[1   , -1/2, -1/2],
+		 [-1/2, 1/2 , 0   ],
+		 [-1/2, 0   , 1/2 ]]
+	# to transform any element into the canonical element, we need this:
+	# J = (x2 - x1)(y3 - y1) - (x3 - x1)(y2 - y1)
+	# this is discussed further in the referenced paper
+
+	# all we need to do is create (n,n) T & S matrices
+	# (n = # of vertices in mesh), and iterate over all triangles. 
+	#
+	# vertices that are shared with multiple triangles will have their T & S values summed.
+	#
+	# T[n,m] += J*A[i,j]
+	# S[n,m] += J*Ad[i,j]
 
 	print('populating matrices...\n')
-
-
+	
 	# number of elements
 	N = len(triangles)
 
@@ -59,26 +91,30 @@ def animate_2D(iterations, c, numTriangles, dt, dir, show, save):
 
 	# local basis integrals
 
-	A = [[1/12 , -1/24, -1/24],
-		[-1/24, 1/4  , 1/8  ],
-		[-1/24, 1/8  , 1/12]]
-
-
-	Ad = [[1   , -1/2, -1/2],
-		[-1/2, 1/2 , 0   ],
-		[-1/2, 0   , 1/2 ]]
 
 	T = np.zeros((n, n))
 	S = np.zeros((n, n))
 
 	for [ind1, ind2, ind3] in triangles:
+
+		# (ind1, ind2, ind3) are the indices for each point on 1 triangle.
+		# xs[ind] and ys[ind] will give x and y values for that index.
+
 		inds = [ind1, ind2, ind3]
+		# calculate J for this specific triangle
 		J = (xs[ind2]-xs[ind1])*(ys[ind3]-ys[ind1]) - (xs[ind3] - xs[ind1])*(ys[ind2] - ys[ind1])
+
+		# now cycle through each (i,j) pair in A, Ad 
+		# to update T, S with the specific J for the current element
 		for i in range(0, 3):
 			for j in range(0, 3):
 				T[inds[i], inds[j]] += J*A[i][j]
 				S[inds[i], inds[j]] += J*Ad[i][j]
 				
+
+	# boundary condition:
+	# if point is on boundary (bs[i] = 1), 
+	# then set S[i:] = 0, T[i:] = 0, T[i,i] = 1
 	for i in range(0, n):
 		if(bs[i]):
 			for j in range(0, n):
@@ -88,7 +124,7 @@ def animate_2D(iterations, c, numTriangles, dt, dir, show, save):
 				else:
 					T[i, j] = 0
 
-
+	# iterate through time using first order approximation
 	def iteration(v, vDer):
 		vNew = v + dt*vDer
 		q = -c*c*S@v
@@ -96,14 +132,16 @@ def animate_2D(iterations, c, numTriangles, dt, dir, show, save):
 		vDerNew = vDer + dt*r
 		return (vNew, vDerNew)
 
-	# initial value
-
+	# initial value function u(x,0)
+	# TODO: need to find a way to vary this function or make it a user input
 	def initialU(x, y):
 		return math.e - math.exp(x*x + y*y)
 
 	u = np.zeros((n, 1))
 	uDer = np.zeros((n, 1))
 
+	# filling in initial data for each element, 
+	# making sure that u[boundary] == 0.
 	for i in range(0, n):
 		if(not bs[i]):
 			u[i] = initialU(xs[i], ys[i])
@@ -117,6 +155,7 @@ def animate_2D(iterations, c, numTriangles, dt, dir, show, save):
 	data = []
 	data.append(u)
 
+	# populating data for entire timespan of simulation
 	for i in range(0, iterations):
 		(uNew, uDerNew) = iteration(u, uDer)
 		u = uNew
