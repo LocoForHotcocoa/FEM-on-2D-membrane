@@ -1,6 +1,6 @@
-from src.parse_func import parse_func
-from src.FEM_circle import animate_on_circle
-from src.FEM_linear import animate_1D
+from .parse_func import parse_func
+from .FEM_circle import animate_on_circle
+from .FEM_linear import animate_on_line
 
 import typer
 from typing_extensions import Annotated
@@ -8,7 +8,6 @@ from typing_extensions import Annotated
 app = typer.Typer()
 
 arb_func = Annotated[str, typer.Argument(help='arbitrary function of x and y that fits in a r=1 circle')]
-arg_op = Annotated[float, typer.Argument(help='argument for defined function')]
 ver_op = Annotated[bool, typer.Option('--new/--old', help='use old version with analytical method (default is FEM)')]
 
 # simulation arguments
@@ -16,6 +15,8 @@ elements_op = Annotated[int, typer.Option(help='give approximate number of trian
 it_op = Annotated[int, typer.Option(help='# of iterations with dt time step')]
 c_op = Annotated[float, typer.Option(help='speed of sound on membrane')]
 dt_op = Annotated[float, typer.Option(help='time step in seconds between FEM frames')]
+
+
 dir_op = Annotated[str, typer.Option(help='directory to store animations')]
 show_op = Annotated[bool, typer.Option(help='show matplotlib window while rendering')]
 save_op = Annotated[bool, typer.Option(help='save animation with ffmpeg to animations dir location')]

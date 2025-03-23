@@ -6,7 +6,7 @@ import matplotlib.animation as ani
 import os
 import math
 
-def animate_1D(iterations, c, numElements, dt, dir, show, save):
+def animate_on_line(iterations, c, numElements, dt, dir, show, save):
 
     # Amount of elements
     N = numElements
