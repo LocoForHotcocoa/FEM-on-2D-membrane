@@ -2,202 +2,219 @@ import numpy as np
 import numpy.linalg as lin
 import meshpy.triangle as triangle
 import math
-import os
+import pathlib
 
-from tools.FEM_methods import *
 import matplotlib.pyplot as plt
-import matplotlib.tri as mtri
 import matplotlib.animation as ani
 
-def animate_2D(iterations, c, numTriangles, dt, dir, show, save):
-      
-	# constants
-	# numTriangles = 30
-	# c = 4
-	# dt = 0.001
+# mesh creation
+def create_mesh(numTriangles: int) -> triangle.MeshInfo:
+    """
+    creates triangle mesh with meshpy.triangle library. Tries to estimate
+    the number of boundary points using some random function that chatgpt gave me:
 
-	# iterations = 20000
-	stepSize = 50
+    `numBoundaryPoints = int(2 * np.sqrt(numTriangles))`
+    
+    TODO: figure out a better way to estimate `numBoundaryPoints`, `max_volume`, and `min_angle`.
+    """
 
-	# save = True # choose to save the animation as a file
-	# dir = 'animations' # folder name to store animations
-	filename = f'FEM_tri_{numTriangles}_i_{iterations}_dt_{dt}_c_{c}.mp4' # animation file name
+    def round_trip_connect(start, end):
+        result = [(i, i + 1) for i in range(start, end)]
+        result.append((end, start))
+        return result
 
-	fps = int(1/(dt*stepSize))
+    # Generate boundary points in a circular shape
+    numBoundaryPoints = int(2 * np.sqrt(numTriangles))
+    points = [(np.cos(angle), np.sin(angle)) for angle in np.linspace(0, 2*np.pi, numBoundaryPoints, endpoint=False)]
 
+    # Define mesh info
+    info = triangle.MeshInfo()
+    info.set_points(points)
+    info.set_facets(round_trip_connect(0, len(points) - 1))
 
-	#
-	## Mesh Creation ---------------------------------------------------------------------------------------------------- ##
-	#
+    # Estimate max_volume based on desired triangle count
+    area_estimate = np.pi  # Approximate area of the circular domain
+    max_volume = area_estimate / numTriangles  # Average triangle area
 
-	mesh = create_mesh(numTriangles)
+    # Build the mesh
+    mesh = triangle.build(info, max_volume=max_volume, min_angle=30)
 
+    print(f"Generated {len(mesh.elements)} triangles (target: {numTriangles})")
 
-	# Extract list of vertices and triangles from mesh
-	vertices = np.array(mesh.points)
-	triangles = np.array(mesh.elements)
+    return mesh
 
-	# make things easy, seperate (x,y) tuple into seperate list of xs and ys for each vertex
-	xs = vertices[:,0]
-	ys = vertices[:,1]
+def animate_on_circle(iterations: int, c: float, numTriangles: int, dt: float, dir: str, show: bool, save: bool, func) -> None:
+    """
+    creates animation from initial function (func) and a whole bunch of other parameters
+    """
+    stepSize = 50
 
-	# extract boundary point information. for each vertex, 0 = inside, 1 = on boundary
-	bs = np.array(mesh.point_markers)
+    # save = True # choose to save the animation as a file
+    # dir = 'animations' # folder name to store animations
+    filename = f'FEM_tri_{numTriangles}_i_{iterations}_dt_{dt}_c_{c}.mp4' # animation file name
 
-	#
-	## Math ---------------------------------------------------------------------------------------------------- ##
-	#
-	# our canonical element is the triangle that spans the points:
-	# (0,0), (0,1), and (1,0)
-	#
-	# in this element, we use a set of 
-	# 3 canonical basis functions phi(x,y) where:
-	# phi_1 = 1 - x - y
-	# phi_2 = x
-	# phi_3 = y
-	#
-	# then, over our canonical element:
-	#
-	#	integral of (phi_i * phi_j * dA)
-	#	gives us A[i,j]:
-	A = [[1/12 , -1/24, -1/24],
-		[-1/24, 1/4  , 1/8  ],
-		[-1/24, 1/8  , 1/12]]
-	
-	# 	and integral of (np.dot(grad(phi_i), grad(phi_j)) * dA)
-	#	gives us Ad[i,j]:
-	Ad = [[1   , -1/2, -1/2],
-		 [-1/2, 1/2 , 0   ],
-		 [-1/2, 0   , 1/2 ]]
-	# to transform any element into the canonical element, we need this:
-	# J = (x2 - x1)(y3 - y1) - (x3 - x1)(y2 - y1)
-	# this is discussed further in the referenced paper
-
-	# all we need to do is create (n,n) T & S matrices
-	# (n = # of vertices in mesh), and iterate over all triangles. 
-	#
-	# vertices that are shared with multiple triangles will have their T & S values summed.
-	#
-	# T[n,m] += J*A[i,j]
-	# S[n,m] += J*Ad[i,j]
-
-	print('populating matrices...\n')
-	
-	# number of elements
-	N = len(triangles)
-
-	# number of points
-	n = len(vertices)
-
-	# local basis integrals
+    fps = int(1/(dt*stepSize))
 
 
-	T = np.zeros((n, n))
-	S = np.zeros((n, n))
+    mesh = create_mesh(numTriangles)
 
-	for [ind1, ind2, ind3] in triangles:
+    # Extract list of vertices and triangles from mesh
+    vertices = np.array(mesh.points)
+    triangles = np.array(mesh.elements)
 
-		# (ind1, ind2, ind3) are the indices for each point on 1 triangle.
-		# xs[ind] and ys[ind] will give x and y values for that index.
+    # make things easy, seperate (x,y) tuple into seperate list of xs and ys for each vertex
+    xs = vertices[:,0]
+    ys = vertices[:,1]
 
-		inds = [ind1, ind2, ind3]
-		# calculate J for this specific triangle
-		J = (xs[ind2]-xs[ind1])*(ys[ind3]-ys[ind1]) - (xs[ind3] - xs[ind1])*(ys[ind2] - ys[ind1])
+    # extract boundary point information. for each vertex, 0 = inside, 1 = on boundary
+    bs = np.array(mesh.point_markers)
 
-		# now cycle through each (i,j) pair in A, Ad 
-		# to update T, S with the specific J for the current element
-		for i in range(0, 3):
-			for j in range(0, 3):
-				T[inds[i], inds[j]] += J*A[i][j]
-				S[inds[i], inds[j]] += J*Ad[i][j]
-				
+    #
+    ## Math ---------------------------------------------------------------------------------------------------- ##
+    #
+    # our canonical element is the triangle that spans the points:
+    # (0,0), (0,1), and (1,0)
+    #
+    # in this element, we use a set of 
+    # 3 canonical basis functions phi(x,y) where:
+    # phi_1 = 1 - x - y
+    # phi_2 = x
+    # phi_3 = y
+    #
+    # then, over our canonical element:
+    #
+    #	integral of (phi_i * phi_j * dA)
+    #	gives us A[i,j]:
+    A = [[1/12 , -1/24, -1/24],
+        [-1/24, 1/4  , 1/8  ],
+        [-1/24, 1/8  , 1/12]]
+    
+    # 	and integral of (np.dot(grad(phi_i), grad(phi_j)) * dA)
+    #	gives us Ad[i,j]:
+    Ad = [[1   , -1/2, -1/2],
+         [-1/2, 1/2 , 0   ],
+         [-1/2, 0   , 1/2 ]]
+    # to transform any element into the canonical element, we need this:
+    # J = (x2 - x1)(y3 - y1) - (x3 - x1)(y2 - y1)
+    # this is discussed further in the referenced paper
 
-	# boundary condition:
-	# if point is on boundary (bs[i] = 1), 
-	# then set S[i:] = 0, T[i:] = 0, T[i,i] = 1
-	for i in range(0, n):
-		if(bs[i]):
-			for j in range(0, n):
-				S[i,j] = 0
-				if(i == j):
-					T[i, j] = 1
-				else:
-					T[i, j] = 0
+    # all we need to do is create (n,n) T & S matrices
+    # (n = # of vertices in mesh), and iterate over all triangles. 
+    #
+    # vertices that are shared with multiple triangles will have their T & S values summed.
+    #
+    # T[n,m] += J*A[i,j]
+    # S[n,m] += J*Ad[i,j]
 
-	# iterate through time using first order approximation
-	def iteration(v, vDer):
-		vNew = v + dt*vDer
-		q = -c*c*S@v
-		r = lin.solve(T, q)
-		vDerNew = vDer + dt*r
-		return (vNew, vDerNew)
+    print('populating matrices...\n')
+    
+    # number of elements
+    N = len(triangles)
 
-	# initial value function u(x,0)
-	# TODO: need to find a way to vary this function or make it a user input
-	def initialU(x, y):
-		return math.e - math.exp(x*x + y*y)
+    # number of points
+    n = len(vertices)
 
-	u = np.zeros((n, 1))
-	uDer = np.zeros((n, 1))
+    # local basis integrals
 
-	# filling in initial data for each element, 
-	# making sure that u[boundary] == 0.
-	for i in range(0, n):
-		if(not bs[i]):
-			u[i] = initialU(xs[i], ys[i])
-		else:
-			u[i] = 0
-		uDer[i] = 0
-		
-	# iteration
-	print('iterating FEM...\n')
+    T = np.zeros((n, n))
+    S = np.zeros((n, n))
 
-	data = []
-	data.append(u)
+    for [ind1, ind2, ind3] in triangles:
 
-	# populating data for entire timespan of simulation
-	for i in range(0, iterations):
-		(uNew, uDerNew) = iteration(u, uDer)
-		u = uNew
-		uDer = uDerNew
-		if i % stepSize == 0:
-			data.append(u)
+        # (ind1, ind2, ind3) are the indices for each point on 1 triangle.
+        # xs[ind] and ys[ind] will give x and y values for that index.
 
+        inds = [ind1, ind2, ind3]
+        # calculate J for this specific triangle
+        J = (xs[ind2]-xs[ind1])*(ys[ind3]-ys[ind1]) - (xs[ind3] - xs[ind1])*(ys[ind2] - ys[ind1])
 
-	print('plotting solution...\n')
-	fig = plt.figure()
-	ax = fig.add_subplot(111, projection = '3d')
+        # now cycle through each (i,j) pair in A, Ad 
+        # to update T, S with the specific J for the current element
+        for i in range(0, 3):
+            for j in range(0, 3):
+                T[inds[i], inds[j]] += J*A[i][j]
+                S[inds[i], inds[j]] += J*Ad[i][j]
+                
 
-	z = [val[0] for val in data[0]]
-	surf = ax.plot_trisurf(xs, ys, z, triangles=triangles, cmap=plt.cm.YlGnBu_r)
+    # boundary condition:
+    # if point is on boundary (bs[i] = 1), 
+    # then set S[i:] = 0, T[i:] = 0, T[i,i] = 1
+    for i in range(0, n):
+        if(bs[i]):
+            for j in range(0, n):
+                S[i,j] = 0
+                if(i == j):
+                    T[i, j] = 1
+                else:
+                    T[i, j] = 0
 
-	# --------------------------------------------------------
-	# animation
+    # iterate through time using first order approximation
+    def iteration(v, vDer):
+        vNew = v + dt*vDer
+        q = -c*c*S@v
+        r = lin.solve(T, q)
+        vDerNew = vDer + dt*r
+        return (vNew, vDerNew)
 
-	def animate(i):
-		ax.clear()
-		ax.set_zlim([-2,2]) # arbitrary, you can change this if you want
-		ax.set_xlabel("x")
-		ax.set_ylabel("y")
-		ax.set_zlabel("u")
-		z = [val[0] for val in data[i]]
+    # initial value function u(x,0)
+    # TODO: need to find a way to vary this function or make it a user input
+    def initialU(x, y):
+        return math.e - math.exp(x*x + y*y)
 
-		surf = ax.plot_trisurf(xs, ys, z, triangles=triangles, cmap=plt.cm.YlGnBu_r)
-		return surf,
+    u = np.zeros((n, 1))
+    uDer = np.zeros((n, 1))
 
-	anim = ani.FuncAnimation(fig, animate, frames=math.floor(iterations / stepSize),
-							interval=2, blit=False)
+    # filling in initial data for each element, 
+    # making sure that u[boundary] == 0.
+    for i in range(0, n):
+        if(not bs[i]):
+            u[i] = func(xs[i], ys[i])
+        else:
+            u[i] = 0
+        uDer[i] = 0
+        
+    # iteration
+    print('iterating FEM...\n')
 
+    data = []
+    data.append(u)
 
-	if save:
-		if not os.path.exists(dir):
-			os.mkdir(dir)
+    # populating data for entire timespan of simulation
+    for i in range(0, iterations):
+        (uNew, uDerNew) = iteration(u, uDer)
+        u = uNew
+        uDer = uDerNew
+        if i % stepSize == 0:
+            data.append(u)
 
-		writer=ani.FFMpegWriter(bitrate=5000, fps=fps)
-		anim.save(dir + '/' + filename, writer=writer)
-		print(f'saving animation to {dir}/{filename}')
+    print('plotting solution...\n')
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection = '3d')
 
-	if show:
-		plt.show()
+    # --------------------------------------------------------
+    # animation
 
+    def animate(i):
+        ax.clear()
+        ax.set_zlim([-2,2]) # arbitrary, you can change this if you want
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.set_zlabel("u")
+        z = [val[0] for val in data[i]]
 
+        surf = ax.plot_trisurf(xs, ys, z, triangles=triangles, cmap=plt.cm.YlGnBu_r)
+        return surf,
+
+    anim = ani.FuncAnimation(fig, animate, frames=math.floor(iterations / stepSize),
+                            interval=2, blit=False)
+
+    if save:
+        save_dir = pathlib.Path(dir)
+        save_dir.mkdir(exist_ok=True)
+
+        writer=ani.FFMpegWriter(bitrate=5000, fps=fps)
+        anim.save(save_dir / filename, writer=writer)
+        print(f'saving animation to {save_dir / filename}')
+
+    if show:
+        plt.show()
