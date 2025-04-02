@@ -6,6 +6,8 @@ It works for any user defined function!
 
 ## Installation
 - *python 3.13 is required.*
+- *if you want to save animations with `--show` flag, the software **`ffmpeg`** is required and must be in system path.*
+    - if on mac, just download with homebrew: `brew install ffmpeg`
 1. clone repo:
 ```shell
 git clone git@github.com:LocoForHotcocoa/FEM-on-2D-membrane.git
@@ -25,6 +27,8 @@ poetry install
 ```
 
 ## How to Run
+This supports animation on a 1D line: `fem line`, and a 2D circular membrane: `fem circle`
+
 ```shell
 # get help menus:
 fem --help
@@ -35,13 +39,7 @@ fem circle 'cos(3*arctan2(y,x))*sin(pi*sqrt(x**2+y**2))' --num-elements 500 --sp
 ```
 
 *TODO*: 
-1. allow user to run the old version with no FEM (my actual submitted project from PHYS 163): 
-2. allow user to run `line` to animate FEM on line
-
-
-## Things that I'm currently working on:
-- Make the tool more user-friendly
-    - Somehow allow entire function to be read in by the user
-    - Maybe json file for parameters? idk
+1. fix framerate: `--show`/`--save` are not the same framerate
+2. idk what else to do
 
 
