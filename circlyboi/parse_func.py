@@ -28,7 +28,7 @@ def is_zero_on_boundary(func) -> bool:
     return True  # If all points on the circle are zero, return True
 
 
-def parse_func(raw_func: str):
+def parse_circle_func(raw_func: str):
     try:
         func = lambda x, y: ne.evaluate(raw_func, local_dict={**safe_locals, "x": x, "y": y})
         func(0,0) # test validity of function (check for syntax errors, etc.)
@@ -39,10 +39,28 @@ def parse_func(raw_func: str):
         print(f'exception raised: {e}')
         print('function is not valid, please try again.')
         raise e
+
+def parse_line_func(raw_func: str):
+    try:
+        func = lambda x: ne.evaluate(raw_func, local_dict={**safe_locals, "x":x})
+        func(0)
+
+        return func
+    except Exception as e:
+        print(f'exception raised: {e}')
+        print('function is not valid, please try again.')
+        raise e
     
+
 if __name__=='__main__':
     while True:
         raw_func = input('please enter a function of x and y:\n')
-        func = parse_func(raw_func)
+        func = parse_circle_func(raw_func)
         if func:
             print(func(1,1))
+        
+        raw_func = input('please enter a function of x:\n')
+        func = parse_line_func(raw_func)
+        if func:
+            print(func(1))
+

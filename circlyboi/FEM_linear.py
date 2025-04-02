@@ -1,12 +1,12 @@
 import numpy as np
 import numpy.linalg as lin
+import math
+import pathlib
+
 import matplotlib.pyplot as plt
 import matplotlib.animation as ani
 
-import os
-import math
-
-def animate_on_line(iterations, c, numElements, dt, dir, show, save):
+def animate_on_line(iterations: int, c: float, numElements: int, dt: float, dir: str, show: bool, func) -> None:
 
     # Amount of elements
     N = numElements
@@ -59,16 +59,17 @@ def animate_on_line(iterations, c, numElements, dt, dir, show, save):
         return (vNew, vDerNew)
 
     # The real solution
-    def realU(x, t):
-        return np.cos(2*np.pi*t)*np.sin(2*np.pi*x)
+    # def realU(x, t):
+    #     return np.cos(2*np.pi*t)*np.sin(2*np.pi*x)
 
     # The initial value of the finite element problem
     u = np.zeros((n, 1))
     uDer = np.zeros((n, 1))
 
+    # use user defined function
     for i in range(0, n):
         x = i*h
-        u[i] = realU(x, 0)
+        u[i] = func(x)
         
 
     # calculating all values
@@ -108,14 +109,14 @@ def animate_on_line(iterations, c, numElements, dt, dir, show, save):
     # print(len(data))
     # print(a)
     # print(iterations / stepSize)
+    if show:
+        plt.show()
 
-    if save:
-        if not os.path.exists(dir):
-            os.mkdir(dir)
+    else:
+        save_dir = pathlib.Path(dir)
+        save_dir.mkdir(exist_ok=True)
         
         writer=ani.FFMpegWriter(bitrate=5000, fps=fps)
         anim.save(dir + '/' + filename, writer=writer)
         print(f'saving animation to {dir}/{filename}')
 
-    if show:
-	    plt.show()
