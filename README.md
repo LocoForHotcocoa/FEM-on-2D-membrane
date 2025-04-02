@@ -1,12 +1,14 @@
 # my final project from Computational Physics (PHYS 163) at CSUS
 
+reference: https://studenttheses.uu.nl/bitstream/handle/20.500.12932/29861/thesis.pdf?sequence=2
+
 This app computes the modes of the 2D wave equation on a circle with FEM and can be used for any continuous function for `f(R) = 0`.
 
 It works for any user defined function!
 
 ## Installation
 - *python 3.13 is required.*
-- *if you want to save animations with `--show` flag, the software **`ffmpeg`** is required and must be in system path.*
+- *if you want to save animations with `--save` flag, the software **`ffmpeg`** is required and must be in system path.*
     - if on mac, just download with homebrew: `brew install ffmpeg`
 1. clone repo:
 ```shell
