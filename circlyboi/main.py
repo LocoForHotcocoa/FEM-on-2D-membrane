@@ -1,4 +1,4 @@
-from .parse_func import parse_func
+from .parse_func import parse_line_func, parse_circle_func
 from .FEM_circle import animate_on_circle
 from .FEM_linear import animate_on_line
 
@@ -7,7 +7,8 @@ from typing_extensions import Annotated
 
 app = typer.Typer()
 
-arb_func = Annotated[str, typer.Argument(help='arbitrary function of x and y that fits in a r=1 circle')]
+arb_circle_func = Annotated[str, typer.Argument(help='arbitrary function of x and y that fits in a r=1 circle')]
+arb_line_func = Annotated[str, typer.Argument(help='arbitrary function of x')]
 ver_op = Annotated[bool, typer.Option('--new/--old', help='use old version with analytical method (default is FEM)')]
 
 # simulation arguments
@@ -18,28 +19,34 @@ dt_op = Annotated[float, typer.Option(help='time step in seconds between FEM fra
 
 
 dir_op = Annotated[str, typer.Option(help='directory to store animations')]
-show_op = Annotated[bool, typer.Option(help='show matplotlib window while rendering')]
-save_op = Annotated[bool, typer.Option(help='save animation with ffmpeg to animations dir location')]
+render_op = Annotated[bool, typer.Option('--show/--save',help='show matplotlib window while rendering, or save to animations dir location with ffmpeg (must be installed)')]
 
 
 # def animate_2D(iterations: int, c: float, numTriangles: int, dt: float, dir: str, show: bool, save: bool, func) -> None:
 @app.command()
-def circle(func: arb_func = 'e - exp(x**2 + y**2)', 
-           num_elements: elements_op = 50, iterations: it_op = 20000, 
-           speed: c_op = 1, dt: dt_op = 0.001, dir: dir_op = 'animations', 
-           show: show_op = False, save: save_op = True):
-    if not show and not save:
-        show = True
+def circle(func: arb_circle_func = 'e - exp(x**2 + y**2)', 
+           num_elements: elements_op = 20, iterations: it_op = 2000, 
+           speed: c_op = .5, dt: dt_op = 0.01, dir: dir_op = 'animations', 
+           show: render_op = True):
+    
     try:
-        user_func = parse_func(func)
+        user_func = parse_circle_func(func)
     except:
         raise typer.Exit(1)
+    
     print('all working good')
-    animate_on_circle(iterations, speed, num_elements, dt, dir, show, save, user_func)
+    animate_on_circle(iterations, speed, num_elements, dt, dir, show, user_func)
 
 @app.command()
-def line():
-    print('will work on it')
-
-if __name__ == "__main__":
-    app()
+def line(func: arb_line_func = 'sin(2*pi*x)', 
+         num_elements: elements_op = 50, iterations: it_op = 20000, 
+         speed: c_op = 1, dt: dt_op = 0.001, dir: dir_op = 'animations', 
+         show: render_op = True):
+    
+    try:
+        user_func = parse_line_func(func)
+    except:
+        raise typer.Exit(1)
+    
+    print('all working good')
+    animate_on_line(iterations, speed, num_elements, dt, dir, show, user_func)

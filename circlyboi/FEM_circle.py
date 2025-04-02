@@ -43,7 +43,7 @@ def create_mesh(numTriangles: int) -> triangle.MeshInfo:
 
     return mesh
 
-def animate_on_circle(iterations: int, c: float, numTriangles: int, dt: float, dir: str, show: bool, save: bool, func) -> None:
+def animate_on_circle(iterations: int, c: float, numTriangles: int, dt: float, dir: str, show: bool, func) -> None:
     """
     creates animation from initial function (func) and a whole bunch of other parameters
     """
@@ -207,8 +207,11 @@ def animate_on_circle(iterations: int, c: float, numTriangles: int, dt: float, d
 
     anim = ani.FuncAnimation(fig, animate, frames=math.floor(iterations / stepSize),
                             interval=2, blit=False)
+    
+    if show:
+        plt.show()
 
-    if save:
+    else:
         save_dir = pathlib.Path(dir)
         save_dir.mkdir(exist_ok=True)
 
@@ -216,5 +219,3 @@ def animate_on_circle(iterations: int, c: float, numTriangles: int, dt: float, d
         anim.save(save_dir / filename, writer=writer)
         print(f'saving animation to {save_dir / filename}')
 
-    if show:
-        plt.show()
