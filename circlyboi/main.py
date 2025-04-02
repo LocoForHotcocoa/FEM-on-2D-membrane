@@ -9,7 +9,6 @@ app = typer.Typer()
 
 arb_circle_func = Annotated[str, typer.Argument(help='arbitrary function of x and y that fits in a r=1 circle')]
 arb_line_func = Annotated[str, typer.Argument(help='arbitrary function of x')]
-ver_op = Annotated[bool, typer.Option('--new/--old', help='use old version with analytical method (default is FEM)')]
 
 # simulation arguments
 elements_op = Annotated[int, typer.Option(help='give approximate number of triangles to use in FEM')]
@@ -25,8 +24,8 @@ render_op = Annotated[bool, typer.Option('--show/--save',help='show matplotlib w
 # def animate_2D(iterations: int, c: float, numTriangles: int, dt: float, dir: str, show: bool, save: bool, func) -> None:
 @app.command()
 def circle(func: arb_circle_func = 'e - exp(x**2 + y**2)', 
-           num_elements: elements_op = 20, iterations: it_op = 2000, 
-           speed: c_op = .5, dt: dt_op = 0.01, dir: dir_op = 'animations', 
+           num_elements: elements_op = 200, iterations: it_op = 20000, 
+           speed: c_op = 1.5, dt: dt_op = 0.001, dir: dir_op = 'animations', 
            show: render_op = True):
     
     try:
@@ -39,8 +38,8 @@ def circle(func: arb_circle_func = 'e - exp(x**2 + y**2)',
 
 @app.command()
 def line(func: arb_line_func = 'sin(2*pi*x)', 
-         num_elements: elements_op = 50, iterations: it_op = 20000, 
-         speed: c_op = 1, dt: dt_op = 0.001, dir: dir_op = 'animations', 
+         num_elements: elements_op = 50, iterations: it_op = 10000, 
+         speed: c_op = .25, dt: dt_op = 0.001, dir: dir_op = 'animations', 
          show: render_op = True):
     
     try:
