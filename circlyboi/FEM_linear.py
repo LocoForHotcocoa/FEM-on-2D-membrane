@@ -45,7 +45,7 @@ def animate_on_line(iterations: int, c: float, num_elements: int, dt: float, dir
 
     num_frames = math.floor(iterations / step_size)
     total_time = num_frames / fps
-    print(f'total time is: {total_time} seconds')
+    print(f'total time is: {total_time:.2f} seconds')
     # filename to save animation
     filename = f'FEM_linear_{num_elements}_i_{iterations}_dt_{dt}_c_{c}.mp4' # animation file name
 
@@ -116,15 +116,9 @@ def animate_on_line(iterations: int, c: float, num_elements: int, dt: float, dir
     ax = plt.axes(xlim=(0, 1), ylim=(-1.7, 1.7))
     line, = ax.plot([], [], lw=2)
 
-    # initialization function: plot the background of each frame
-    def init():
-        line.set_data([], [])
-        return line,
-
     # animation function.  This is called sequentially
     def animate(i):
         line.set_data(spacing, data[i])
-        return line,
 
     # call the animator.  blit=True means only re-draw the parts that have changed.
     anim = ani.FuncAnimation(fig, animate, frames=num_frames, interval=(1.0/fps)*1000)

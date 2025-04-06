@@ -8,12 +8,12 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as ani
 
 # mesh creation
-def create_mesh(numTriangles: int) -> triangle.MeshInfo:
+def create_mesh(num_triangles: int) -> triangle.MeshInfo:
     """
     creates triangle mesh with meshpy.triangle library. Tries to estimate
     the number of boundary points using some random function that chatgpt gave me:
 
-    `numBoundaryPoints = int(2 * np.sqrt(numTriangles))`
+    `numBoundaryPoints = int(2 * np.sqrt(num_triangles))`
     
     TODO: figure out a better way to estimate `numBoundaryPoints`, `max_volume`, and `min_angle`.
     """
@@ -24,7 +24,7 @@ def create_mesh(numTriangles: int) -> triangle.MeshInfo:
         return result
 
     # Generate boundary points in a circular shape
-    numBoundaryPoints = int(2 * np.sqrt(numTriangles))
+    numBoundaryPoints = int(2 * np.sqrt(num_triangles))
     points = [(np.cos(angle), np.sin(angle)) for angle in np.linspace(0, 2*np.pi, numBoundaryPoints, endpoint=False)]
 
     # Define mesh info
@@ -34,29 +34,56 @@ def create_mesh(numTriangles: int) -> triangle.MeshInfo:
 
     # Estimate max_volume based on desired triangle count
     area_estimate = np.pi  # Approximate area of the circular domain
-    max_volume = area_estimate / numTriangles  # Average triangle area
+    max_volume = area_estimate / num_triangles  # Average triangle area
 
     # Build the mesh
     mesh = triangle.build(info, max_volume=max_volume, min_angle=30)
 
-    print(f"Generated {len(mesh.elements)} triangles (target: {numTriangles})")
+    print(f"Generated {len(mesh.elements)} triangles (target: {num_triangles})")
 
     return mesh
 
-def animate_on_circle(iterations: int, c: float, numTriangles: int, dt: float, dir: str, show: bool, func) -> None:
+def animate_on_circle(iterations: int, c: float, num_triangles: int, dt: float, dir: str, show: bool, func) -> None:
     """
     creates animation from initial function (func) and a whole bunch of other parameters
     """
-    stepSize = 50
+
+
+    """    
+    calculating FPS and skipped frames:
+    - dt (float): ∆t between iterations in FEM
+    - step_size (int): how many iterations of FEM per frame in animation
+    - fps (float): `1 / (dt * step_size)` - fps of actual plotted animation
+    - iterations: num of iterations in FEM
+
+    we want fps to be ~30 (idk just feels right).
+    actual fps will most likely be slightly higher because dealing with integer step_size but thats ok.
+
+    example:
+    ```
+    dt = 0.01
+    step_size = math.floor(1.0/(dt*fps_target)) = 1/(0.01*30) => 3.33 ~= 3
+    fps = 1/(0.01*3) = 33.3
+    ```
+
+    how long will video be? how many frames?
+    num_frames = math.floor(iterations / step_size) -- get rid of the last frame to avoid out of bounds
+    total_time = num_frames / fps
+    """
+
+    fps_target = 30
+    step_size = math.floor(1.0/(dt*fps_target))
+    fps = 1.0/(dt*step_size)
+
+    num_frames = math.floor(iterations / step_size)
+    total_time = num_frames / fps
+    print(f'total time is: {total_time:.2f} seconds')
 
     # save = True # choose to save the animation as a file
     # dir = 'animations' # folder name to store animations
-    filename = f'FEM_tri_{numTriangles}_i_{iterations}_dt_{dt}_c_{c}.mp4' # animation file name
+    filename = f'FEM_tri_{num_triangles}_i_{iterations}_dt_{dt}_c_{c}.mp4' # animation file name
 
-    fps = int(1/(dt*stepSize))
-
-
-    mesh = create_mesh(numTriangles)
+    mesh = create_mesh(num_triangles)
 
     # Extract list of vertices and triangles from mesh
     vertices = np.array(mesh.points)
@@ -156,11 +183,6 @@ def animate_on_circle(iterations: int, c: float, numTriangles: int, dt: float, d
         vDerNew = vDer + dt*r
         return (vNew, vDerNew)
 
-    # initial value function u(x,0)
-    # TODO: need to find a way to vary this function or make it a user input
-    def initialU(x, y):
-        return math.e - math.exp(x*x + y*y)
-
     u = np.zeros((n, 1))
     uDer = np.zeros((n, 1))
 
@@ -184,7 +206,7 @@ def animate_on_circle(iterations: int, c: float, numTriangles: int, dt: float, d
         (uNew, uDerNew) = iteration(u, uDer)
         u = uNew
         uDer = uDerNew
-        if i % stepSize == 0:
+        if i % step_size == 0:
             data.append(u)
 
     print('plotting solution...\n')
@@ -201,12 +223,9 @@ def animate_on_circle(iterations: int, c: float, numTriangles: int, dt: float, d
         ax.set_ylabel("y")
         ax.set_zlabel("u")
         z = [val[0] for val in data[i]]
+        ax.plot_trisurf(xs, ys, z, triangles=triangles, cmap=plt.cm.YlGnBu_r)
 
-        surf = ax.plot_trisurf(xs, ys, z, triangles=triangles, cmap=plt.cm.YlGnBu_r)
-        return surf,
-
-    anim = ani.FuncAnimation(fig, animate, frames=math.floor(iterations / stepSize),
-                            interval=2, blit=False)
+    anim = ani.FuncAnimation(fig, animate, frames=num_frames, interval=(1.0/fps)*1000)
     
     if show:
         plt.show()
