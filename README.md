@@ -37,11 +37,11 @@ fem --help
 fem circle --help
 
 # example function call:
-fem circle 'cos(3*arctan2(y,x))*sin(pi*sqrt(x**2+y**2))' --num-elements 500 --speed 4
+fem circle 'cos(3*arctan2(y,x))*sin(pi*sqrt(x**2+y**2))' --num-elements 500 --speed 4 --iterations 10000
 ```
 
 *TODO*: 
-1. fix framerate: `--show`/`--save` are not the same framerate
-2. idk what else to do
+1. fix framerate: `--show`/`--save` are not the same framerate **DONE!**
+2. figure out a way to separate wave calc logic and plotting logic
 
 
