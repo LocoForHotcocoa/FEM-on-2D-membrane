@@ -7,7 +7,7 @@ This app computes the modes of the 2D wave equation on a circle with FEM and can
 It works for any user defined function!
 
 ## Installation
-- *python 3.13 is required.*
+- *python 3.10 or higher is required.*
 - *if you want to save animations with `--save` flag, the software **`ffmpeg`** is required and must be in system path.*
     - if on mac, just download with homebrew: `brew install ffmpeg`
 1. clone repo:
