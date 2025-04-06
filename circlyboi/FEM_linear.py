@@ -40,7 +40,7 @@ def animate_on_line(iterations: int, c: float, num_elements: int, dt: float, dir
     """
 
     fps_target = 30
-    step_size = math.floor(1.0/(dt*fps_target))
+    step_size = math.ceil(1.0/(dt*fps_target))
     fps = 1.0/(dt*step_size)
 
     num_frames = math.floor(iterations / step_size)

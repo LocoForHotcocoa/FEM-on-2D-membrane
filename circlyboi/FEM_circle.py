@@ -62,8 +62,8 @@ def animate_on_circle(iterations: int, c: float, num_triangles: int, dt: float, 
     example:
     ```
     dt = 0.01
-    step_size = math.floor(1.0/(dt*fps_target)) = 1/(0.01*30) => 3.33 ~= 3
-    fps = 1/(0.01*3) = 33.3
+    step_size = math.ceil(1.0/(dt*fps_target)) = 1/(0.01*30) = 4
+    fps = 1/(0.01*3) = 25
     ```
 
     how long will video be? how many frames?
@@ -72,7 +72,7 @@ def animate_on_circle(iterations: int, c: float, num_triangles: int, dt: float, 
     """
 
     fps_target = 30
-    step_size = math.floor(1.0/(dt*fps_target))
+    step_size = math.ceil(1.0/(dt*fps_target))
     fps = 1.0/(dt*step_size)
 
     num_frames = math.floor(iterations / step_size)
